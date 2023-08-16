@@ -1,0 +1,154 @@
+---
+title: "clustering"
+output:
+  html_document:
+    df_print: paged
+date: "2023-06-27"
+---
+
+```{r}
+# Step 1: Import the data from CSV
+data <- read.csv("C:/Users/fredy/Downloads/Employees.csv")
+
+# Step 2: Select the variables for analysis
+variables <- data[, c("Age", "MonthlyIncome", "PercentSalaryHike", "YearsAtCompany")]
+
+# Step 3: Scale the data and set the random seed
+set.seed(42)
+scaled_data <- scale(variables)
+
+# Step 4: Create a function to calculate the total within-cluster sum of squared deviations
+total_within_ss <- function(k) {
+  kmeans_results <- kmeans(scaled_data, centers = k, nstart = 10)
+  return(kmeans_results$tot.withinss)
+}
+
+# Step 5: Generate an elbow plot
+k_values <- 1:10
+ss_values <- sapply(k_values, total_within_ss)
+
+plot(k_values, ss_values, type = "b", pch = 19, frame = FALSE,
+     xlab = "Number of Clusters (k)", ylab = "Total Within-Cluster Sum of Squares")
+
+# Quiz Question #1: What does the elbow plot depict?
+# The elbow plot depicts the relationship between the number of clusters (k) and the total within-cluster sum of squares. It helps us determine the optimal number of clusters to use in the analysis.
+
+# Step 6: Run k-means clustering with 4 clusters and 1000 random restarts
+k <- 4
+kmeans_results <- kmeans(scaled_data, centers = k, nstart = 1000)
+
+# Step 7: Display the structure of the k-means clustering object
+str(kmeans_results)
+
+# Quiz Question #2: What is the size of the largest cluster?
+largest_cluster <- max(table(kmeans_results$cluster))
+largest_cluster
+
+# Quiz Question #3: What is the size of the smallest cluster?
+smallest_cluster <- min(table(kmeans_results$cluster))
+smallest_cluster
+#######################3
+# Step 8: Display cluster statistics using the Euclidean method
+cluster_stats <- aggregate(scaled_data, by = list(kmeans_results$cluster), FUN = mean)
+colnames(cluster_stats)[1] <- "Cluster"
+cluster_stats
+# Quiz Question #4: Which cluster is the densest? Type the within-cluster average distance ($average.distance). Round to 2 decimal places.
+densest_cluster <- cluster_stats$Cluster[which.min(kmeans_results$withinss)]
+densest_average_distance <- round(kmeans_results$within[densest_cluster], 2)
+densest_average_distance
+
+# Identify the cluster with the minimum within-cluster average distance
+densest_cluster <- cluster_stats$Cluster[which.min(kmeans_results$within)]
+
+# Get the within-cluster average distance for the densest cluster
+densest_average_distance <- round(kmeans_results$within[densest_cluster], 2)
+
+# Print the densest cluster and its within-cluster average distance
+print(paste("Densest Cluster:", densest_cluster))
+print(paste("Within-Cluster Average Distance:", densest_average_distance))
+
+
+# Quiz Question #5: What is the ratio of the average between-cluster distance to the average within-cluster distance for the smallest cluster (by cluster size)? Use the average between-cluster distance of the smallest cluster and the largest cluster ($avg.between.matrix). The ratio should be Between-cluster/within-cluster. Round the answer to 3 decimal places.
+smallest_cluster <- cluster_stats$Cluster[which.min(table(kmeans_results$cluster))]
+smallest_avg_within_distance <- round(kmeans_results$within[smallest_cluster], 3)
+smallest_cluster/smallest_avg_within_distance
+# Calculate the average between-cluster distance for the smallest cluster
+num_clusters <- k
+smallest_avg_between_distance <- sum(kmeans_results$betweenss) / (num_clusters - 1)
+smallest_avg_between_distance <- round(smallest_avg_between_distance, 3)
+ratio <- smallest_avg_between_distance / smallest_avg_within_distance
+ratio
+# Quiz Question #6: One rule of thumb is that the ratio for average between-cluster distance to average within-cluster distance should exceed what value for useful clusters?
+rule_of_thumb_ratio <- 1  # Example value, you may have different criteria
+rule_of_thumb_ratio
+
+# Add the cluster assignment to the original unscaled data
+data$Cluster <- kmeans_results$cluster
+
+# View the updated data with cluster assignments
+print(data)
+# Identify the numeric variables in the data
+numeric_vars <- sapply(data, is.numeric)
+
+# Calculate variable averages for all numeric variables based on cluster
+variable_averages <- aggregate(. ~ Cluster, data = data[, numeric_vars], FUN = mean)
+# View the variable averages
+print(variable_averages)
+# Quiz Question #7: What is the average monthly income for all employees in the dataset? (Type number with dollar sign, comma, and two decimal points, e.g. $2,500.00)
+average_monthly_income <- variable_averages$MonthlyIncome[1]
+average_monthly_income <- paste("$", format(round(average_monthly_income, 2), nsmall = 2), sep = "")
+average_monthly_income
+
+# Calculate variable averages for each cluster
+cluster_averages <- aggregate(. ~ Cluster, data = data[, numeric_vars], FUN = mean)
+
+# View the variable averages for each cluster
+print(cluster_averages)
+# Quiz Question #8: What are the key characteristics of the cluster with the highest age?
+cluster_highest_age <- cluster_averages[which.max(cluster_averages$Age), ]
+cluster_highest_age
+# Quiz Question #9: What are the key characteristics of the cluster with the highest years at the company?
+cluster_highest_years_at_company <- cluster_averages[which.max(cluster_averages$YearsAtCompany), ]
+cluster_highest_years_at_company
+# Quiz Question #10: What are the key characteristics of the cluster with the highest average salary hike?
+cluster_highest_salary_hike <- cluster_averages[which.max(cluster_averages$PercentSalaryHike), ]
+cluster_highest_salary_hike
+##################3
+# Perform hierarchical cluster analysis
+hierarchical_clusters <- hclust(dist(scale(data[, c("Age", "MonthlyIncome", "PercentSalaryHike", "YearsAtCompany")])) , method = "ward.D2")
+
+# Generate a dendrogram
+plot(hierarchical_clusters, hang = -1)
+# Create 4 clusters using cutree function
+hierarchical_cluster_assignments <- cutree(hierarchical_clusters, k = 4)
+
+# Link cluster assignments to the original data frame
+data$HierarchicalCluster <- hierarchical_cluster_assignments
+# Display the number of observations in each cluster
+table(data$HierarchicalCluster)
+
+# Quiz Question #11: What is NOT true about Ward's method for merging clusters?
+# Ward's method minimizes the variance within each cluster before merging
+
+# Quiz Question #12: What is the size of the largest cluster?
+largest_cluster_size <- max(table(data$HierarchicalCluster))
+largest_cluster_size
+# Quiz Question #13: What is the size of the smallest cluster?
+smallest_cluster_size <- min(table(data$HierarchicalCluster))
+smallest_cluster_size
+# Calculate variable averages for all non-normalized observations
+variable_averages <- aggregate(. ~ HierarchicalCluster, data = data[, numeric_vars], FUN = mean)
+variable_averages
+# Calculate variable averages for each cluster
+cluster_averages <- aggregate(. ~ HierarchicalCluster, data = data[, numeric_vars], FUN = mean)
+
+# Quiz Question #14: What are the key characteristics of cluster 1?
+cluster_1_characteristics <- cluster_averages[cluster_averages$HierarchicalCluster == 1, ]
+cluster_1_characteristics
+# Quiz Question #15: What are the key characteristics of cluster 3?
+cluster_3_characteristics <- cluster_averages[cluster_averages$HierarchicalCluster == 3, ]
+cluster_3_characteristics
+
+# Quiz Question #16: Comparing the k-means and hierarchical cluster analyses, which cluster pairs are most similar?
+# You can compare the clusters based on their characteristics (variable averages) to determine similarity between k-means and hierarchical clusters.
+```
