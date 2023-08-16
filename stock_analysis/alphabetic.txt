@@ -1,0 +1,105 @@
+Sub StockAnalysis()
+    ' Declare variables
+    Dim ws As Worksheet
+    Dim ticker As String
+    Dim openingPrice As Double
+    Dim closingPrice As Double
+    Dim yearlyChange As Double
+    Dim percentChange As Double
+    Dim totalVolume As Double
+    Dim lastRow As Long
+    Dim summaryTableRow As Long
+    
+    ' Loop through all worksheets in the workbook
+    For Each ws In ThisWorkbook.Worksheets
+        ' Set initial values
+        summaryTableRow = 2
+        lastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+        
+        ' Set headers for summary table
+        ws.Range("I1").Value = "Ticker"
+        ws.Range("J1").Value = "Yearly Change"
+        ws.Range("K1").Value = "Percent Change"
+        ws.Range("L1").Value = "Total Volume"
+        
+        ' Loop through each row of data
+        For i = 2 To lastRow
+            ' Check if the current ticker is different from the previous one
+            If ws.Cells(i, 1).Value <> ws.Cells(i - 1, 1).Value Then
+                ' Set the ticker symbol
+                ticker = ws.Cells(i, 1).Value
+                
+                ' Set the opening price for the current year
+                openingPrice = ws.Cells(i, 3).Value
+            End If
+            
+            ' Accumulate the total volume
+            totalVolume = totalVolume + ws.Cells(i, 7).Value
+            
+            ' Check if the current ticker is different from the next one
+            If ws.Cells(i, 1).Value <> ws.Cells(i + 1, 1).Value Then
+                ' Set the closing price for the current year
+                closingPrice = ws.Cells(i, 6).Value
+                
+                ' Calculate the yearly change and percent change
+                yearlyChange = closingPrice - openingPrice
+                If openingPrice <> 0 Then
+                    percentChange = yearlyChange / openingPrice
+                Else
+                    percentChange = 0
+                End If
+                
+                ' Output the results in the summary table
+                ws.Cells(summaryTableRow, 9).Value = ticker
+                ws.Cells(summaryTableRow, 10).Value = yearlyChange
+                ws.Cells(summaryTableRow, 11).Value = percentChange
+                ws.Cells(summaryTableRow, 12).Value = totalVolume
+                
+                ' Apply conditional formatting to highlight positive and negative changes
+                If yearlyChange >= 0 Then
+                    ws.Cells(summaryTableRow, 10).Interior.Color = RGB(0, 255, 0) ' Green
+                Else
+                    ws.Cells(summaryTableRow, 10).Interior.Color = RGB(255, 0, 0) ' Red
+                End If
+                
+                ' Reset the variables for the next ticker
+                totalVolume = 0
+                summaryTableRow = summaryTableRow + 1
+            End If
+        Next i
+        
+        ' Find the stock with the greatest percent increase, greatest percent decrease, and greatest total volume
+        lastRow = ws.Cells(Rows.Count, 11).End(xlUp).Row
+        ws.Range("O2").Value = "Greatest % Increase"
+        ws.Range("O3").Value = "Greatest % Decrease"
+        ws.Range("O4").Value = "Greatest Total Volume"
+        ws.Range("P1").Value = "Ticker"
+        ws.Range("Q1").Value = "Value"
+        
+        ' Loop through the summary table to find the maximum and minimum values
+        For i = 2 To lastRow
+            ' Find the greatest percent increase
+            If ws.Cells(i, 11).Value = Application.WorksheetFunction.Max(ws.Range("K2:K" & lastRow)) Then
+                ws.Range("P2").Value = ws.Cells(i, 9).Value
+                ws.Range("Q2").Value = ws.Cells(i, 11).Value
+                ws.Range("Q2").NumberFormat = "0.00%"
+            End If
+            
+            ' Find the greatest percent decrease
+            If ws.Cells(i, 11).Value = Application.WorksheetFunction.Min(ws.Range("K2:K" & lastRow)) Then
+                ws.Range("P3").Value = ws.Cells(i, 9).Value
+                ws.Range("Q3").Value = ws.Cells(i, 11).Value
+                ws.Range("Q3").NumberFormat = "0.00%"
+            End If
+            
+            ' Find the greatest total volume
+            If ws.Cells(i, 12).Value = Application.WorksheetFunction.Max(ws.Range("L2:L" & lastRow)) Then
+                ws.Range("P4").Value = ws.Cells(i, 9).Value
+                ws.Range("Q4").Value = ws.Cells(i, 12).Value
+            End If
+        Next i
+        
+        ' Auto-fit columns in the summary table
+        ws.Columns("I:Q").AutoFit
+    Next ws
+End Sub
