@@ -1,0 +1,226 @@
+---
+title: "Titanic"
+output: word_document
+date: "2023-08-05"
+---
+
+```{r}
+# Load the required package
+library(dplyr)
+titanic_data<- read.csv("C:/Users/fredy/Downloads/Lab3-Data.csv")
+# View the structure of the dataset
+str(titanic_data)
+
+# View the first few rows of the dataset
+head(titanic_data)
+# Question 1a: How many cases are there?
+
+n_cases <- nrow(titanic_data)
+print(paste("Number of cases in the dataset:", n_cases))
+# Question 1a: What is the identifier variable?
+identifier_var <- titanic_data$name
+print("name")
+
+# Question 1a: What is/are the categorical and numerical variable(s) in the data?
+categorical_vars <- c("PCLASS", "SURVIVED", "GENDER")
+numerical_var <- "AGE"
+print(paste("The categorical variables are:", categorical_vars))
+print(paste("The numerical variable is:", numerical_var))
+#(b) Is this an observational study or an experiment? Can the results of the study be extended to the population of 
+#interest which is all ships colliding with an iceberg? Are causal inferences possible?
+
+#Question 2
+library(ggplot2)
+
+# Question 2(a): What percentage of the passengers survived the disaster?
+# Calculate the proportion of survivors
+# Task 2(a): Calculate the percentage of passengers who survived the disaster and create a pie chart
+total_passengers <- nrow(titanic_data)
+survival_table <- table(titanic_data$survived)
+survived_passengers <- survival_table[2]
+survived_passengers
+percentage_survived <- (survived_passengers / total_passengers) * 100
+percentage_survived
+
+# Generate a pie chart
+Died_passengers <- survival_table[1]
+labels <- c("Survived","Died")
+piedata <- c(survived_passengers, Died_passengers)
+pie(piedata,labels)
+
+# Task 2(b): Hypothesis test
+# Null hypothesis: The majority of passengers will not survive a similar future disaster.
+# Alternative hypothesis: The majority of passengers will survive a similar future disaster.
+
+# Perform the hypothesis test
+alpha <- 0.01
+p_hat <- percentage_survived / 100
+z_test_stat <- (p_hat - 0.5) / sqrt((p_hat * (1 - p_hat)) / total_passengers)
+p_value <- 2 * (1 - pnorm(abs(z_test_stat)))
+
+# Print the output
+print("Hypothesis Test:")
+print(paste("Z-test statistic:", z_test_stat))
+print(paste("Distribution of the test statistic under the null hypothesis:", "Standard Normal (Z) distribution"))
+print(paste("p-value:", p_value))
+
+# State your conclusion based on the p-value and alpha
+if (p_value <= alpha) {
+  print("Reject the null hypothesis. There is evidence to suggest that the majority of passengers will survive a similar future disaster.")
+} else {
+  print("Fail to reject the null hypothesis. There is no significant evidence to suggest that the majority of passengers will not survive a similar future disaster.")
+}
+
+# Task 2(c): Calculate the 98% two-sided confidence interval for the population proportion of all non-survivors
+z_critical <- qnorm(1 - alpha/2)
+margin_of_error <- z_critical * sqrt((p_hat * (1 - p_hat)) / total_passengers)
+confidence_interval <- c(p_hat - margin_of_error, p_hat + margin_of_error)
+
+# Print the confidence interval
+print("Confidence Interval:")
+print(confidence_interval)
+
+# Interpret the confidence interval
+print("We are 98% confident that the true proportion of all non-survivors lies between:" )
+confidence_interval
+
+# Compare the result from the confidence interval with the conclusion from part (b)
+if (confidence_interval[1] <= 0.5 && confidence_interval[2] >= 0.5) {
+  print("The confidence interval includes the proportion 0.5, which means we cannot conclude with 98% confidence that the majority of passengers will not survive a similar future disaster.")
+} else {
+  print("The confidence interval does not include the proportion 0.5, which means we can conclude with 98% confidence that the majority of passengers will not survive a similar future disaster.")
+}
+
+########Question 3
+# Create a side-by-side bar chart
+ggplot(titanic_data, aes(x = sex, fill = factor(survived))) +
+  geom_bar(position = "dodge") +
+  labs(title = "Survival Distribution by Gender",
+       x = "Gender",
+       y = "Count",
+       fill = "Survived") +
+  theme_minimal()
+
+
+#(b) Carry out an appropriate two-sample proportion z-test at α = 0.01 to see whether there is a difference in the 
+#non-survival rate for females and males. Carry out the appropriate two-sample proportion z-test. Paste the 
+#output into your report. State the null and alternative hypotheses in terms of parameters. Report the value of 
+#the appropriate test statistic, the distribution of the test statistic under the null hypothesis, and the p-value of the 
+#test to answer the question. State your conclusion. 
+
+# Load necessary library
+library(stats)
+
+# Subset the data for females and males
+female_data <- subset(titanic_data, sex == "female")
+male_data <- subset(titanic_data, sex == "male")
+
+# Calculate the proportion of non-survivors for females and males
+female_table <- table(female_data$survived)
+prop_female_non_survived <- female_table[1]/ nrow(female_data)
+male_table <- table(male_data$survived)
+prop_male_non_survived<- male_table[1]/ nrow(male_data)
+
+# Perform the two-sample proportion z-test
+z_test_result <- prop.test(x = c(male_table[1], female_table[1]),
+                           n = c(nrow(male_data), nrow(female_data)),
+                           correct = FALSE, alternative = "two.sided", conf.level = 0.99)
+# Print the z-test result
+print(z_test_result)
+
+#(c) Find a 99% two-sided confidence interval for the difference in the population proportion of all non-survivors between females and males:
+se_diff<- sqrt((prop_male_non_survived * (1 - prop_male_non_survived)) / nrow(male_data) + (prop_female_non_survived * (1 - prop_female_non_survived)/nrow(female_data)))
+# Calculate the difference in proportions
+prop_diff <- prop_male_non_survived - prop_female_non_survived
+# Calculate the margin of error for the confidence interval
+moe <- qnorm(0.995) * se_diff
+# Calculate the lower and upper bounds of the confidence interval
+ci_lower <- prop_diff - moe
+ci_upper <- prop_diff + moe
+
+# Print the confidence interval
+cat("99% Confidence Interval for the Difference in Proportions:", ci_lower, "to", ci_upper, "\n")
+
+
+#########Question 4
+cont_table<- table(titanic_data$survived, titanic_data$pclass)
+cont_table
+# (i) What percent of all passengers were third-class passengers and survived?
+percent_third_class_survived <- (cont_table[2, 3] / sum(cont_table[2, ])) * 100
+percent_third_class_survived
+# (ii) What percent of the survivors were in third class?
+percent_survivors_in_third_class <- (cont_table[2, 3] / sum(cont_table[, 3])) * 100
+percent_survivors_in_third_class
+# (iii) What percent of the third-class passengers survived?
+percent_third_class_passengers_survived <- (cont_table[2, 3] / sum(cont_table[, 3])) * 100
+percent_third_class_passengers_survived
+# (iv) In which of the three passenger classes were passengers most likely to have survived?
+most_likely_survived_class <- which.max(cont_table[2,])
+most_likely_survived_class
+# (v) In which of the three passenger classes were the passengers least likely to have survived?
+least_likely_survived_class <- which.min(cont_table[2,])
+least_likely_survived_class
+
+# (b) Side-by-side bar chart showing the survival rate for each passenger class
+barplot(cont_table, beside = TRUE, legend = TRUE, 
+        names.arg = c("1st Class", "2nd Class", "3rd Class"), 
+        main = "Survival Rate by Passenger Class", 
+        xlab = "Survived", ylab = "Count")
+
+# (c) Hypothesis test to examine the relationship between survival and passenger class
+test_result <- chisq.test(cont_table)
+test_statistic <- test_result$statistic
+p_value <- test_result$p.value
+p_value
+
+# (d) Hypothesis test to see whether the distributions of survival for each level of passenger class are different
+# Null Hypothesis: The distributions of survival for each level of passenger class are the same.
+# Alternative Hypothesis: The distributions of survival for each level of passenger class are different.
+# Output the results
+cat("Percent of all passengers who were third-class and survived:", percent_third_class_survived, "%\n")
+cat("Percent of survivors who were in third class:", percent_survivors_in_third_class, "%\n")
+cat("Percent of third-class passengers who survived:", percent_third_class_passengers_survived, "%\n")
+cat("Passenger class most likely to have survived:", most_likely_survived_class, "\n")
+cat("Passenger class least likely to have survived:", least_likely_survived_class, "\n")
+
+cat("\nChi-squared test result:\n")
+print(test_result)
+cat("Test Statistic:", test_statistic, "\n")
+cat("P-value:", p_value, "\n")
+
+
+##### Question 5
+# Load the required library
+library(dplyr)
+# filter the data for children under 12
+# Assuming your dataset is named 'titanic_data', filter the data for children under 12
+child_data <- titanic_data %>% filter(age < 12)
+child_data
+# Create a contingency table for survival and passenger class for children
+contingency_table <- table(child_data$survived, child_data$pclass)
+contingency_table
+Survival_rate_for_firstclass= contingency_table[2,1]/sum(contingency_table[,1]) 
+Survival_rate_for_firstclass
+Survival_rate_for_secondtclass <- contingency_table[2,2] / sum(contingency_table[,2]) 
+Survival_rate_for_secondtclass
+Survival_rate_for_thirdclass <- contingency_table[2,3] / sum(contingency_table[,3]) 
+Survival_rate_for_thirdclass
+
+#(b) The emergency protocol “women and children first” was followed during evacuation to ensure that women and 
+#children were the first to board lifeboats. Was the rule effective in saving the lives of women and children 
+#aboard the Titanic? Using α = 0.01, carry out the appropriate test to answer the question. State the null and 
+#alternative hypotheses. Paste the output into your report. Report the value of the appropriate test statistic, the 
+#distribution of the test statistic under the null hypothesis, and the p-value of the test to answer the question. 
+#State your conclusion. (Ignore men with no age listed.)
+# For this test, we'll exclude men with no age listed from the analysis.
+# Step 2: Create a new variable "WOMEN_CHILD" to identify women and children passengers
+titanic_data$WOMEN_CHILD <- ifelse(titanic_data$sex == "female" | titanic_data$age < 12, 1, 0)
+# Step 3: Create a 2x2 contingency table for survival and "WOMEN_CHILD" variable
+table_survival_women_children <- table(titanic_data$survived, titanic_data$WOMEN_CHILD)
+# Step 4: Perform the chi-square test for independence
+chi_square_test <- chisq.test(table_survival_women_children)
+# Step 5: Print the results
+print(chi_square_test)
+
+```
+
