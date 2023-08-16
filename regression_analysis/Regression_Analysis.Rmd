@@ -1,0 +1,147 @@
+---
+title: "Regression_Analysis"
+output: html_document
+date: "2023-06-28"
+---
+
+```{r}
+# Read the CSV file
+data  <- read.csv("C:/Users/fredy/Downloads/Credit.csv")
+### Question 1
+# Summary statistics
+summary(data)
+# Count the number of student cardholders
+num_students <- sum(data$Student == 1)
+num_students
+
+### Question 2
+# Set the seed value for reproducibility
+set.seed(42)
+
+# Generate random indices for partitioning the data
+indices <- sample(1:nrow(data), nrow(data))
+
+# Define the split ratio (50-50)
+split_ratio <- 0.5
+
+# Calculate the split point
+split_point <- round(split_ratio * nrow(data))
+
+# Create the training and validation datasets
+train_data <- data[indices[1:split_point], ]
+valid_data <- data[indices[(split_point + 1):nrow(data)], ]
+# Select quantitative variables
+quant_vars <- train_data[, c("Income", "Limit", "Rating", "Age", "Education", "Balance")]
+
+### Question 3
+# Create correlation matrix
+cor_matrix <- cor(quant_vars)
+cor_matrix
+
+### Question 4
+# Perform multiple regression
+model <- lm(Balance ~ ., data = train_data)
+
+# Summary of the regression model
+summary(model)
+# Install and load the 'car' package for VIF calculation
+library(car)
+
+### Question 5
+# Calculate VIF for predictor variables
+vif_values <- vif(model)
+vif_values
+
+### Question 6
+# Perform multiple regression with selected predictor variables
+model_new <- lm(Balance ~ Income + Rating + Age + Education + Student + Gender + Married, data = train_data)
+
+# Summary of the new regression model
+summary(model_new)
+
+### Question 7
+# Install and load the 'ggplot2' package for plotting
+library(ggplot2)
+
+# Create residual plot
+residuals <- residuals(model_new)
+plot_residuals <- data.frame(Balance = train_data$Balance, Residuals = residuals)
+ggplot(plot_residuals, aes(x = Balance, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  xlab("Balance") +
+  ylab("Residuals") +
+  ggtitle("Residual Plot")
+
+# Create normal probability plot
+qqnorm(residuals)
+qqline(residuals)
+
+
+
+### Question 8
+#Examine the regression output from Step (6).
+#Quiz question #11: Which predictor variables have statistically significant relationships
+#with the outcome variable, Balance? (MC)
+
+### Question 9
+
+# Perform multiple regression with significant predictors
+model_final <- lm(Balance ~ Income + Rating + Age + Education + Student, data = train_data)
+
+# Summary of the final regression model
+summary(model_final)
+#12: What is the slope coefficient for the Age variable?
+
+slope_age <- coef(model_final)["Age"]
+slope_age
+#13: How would you interpret the slope coefficient for the Rating variable?
+interpretation_rating <- "For every one-unit increase in the Rating variable, the predicted credit card balance is expected to increase by 4.750."
+interpretation_rating
+#14: How would you interpret the slope coefficient for the Student variable?
+interpretation_student <- "On average, students have a predicted credit card balance that is 475.6 higher than non-students, holding all other variables constant."
+interpretation_student
+#15: What is the adjusted R2 for this regression analysis?
+adjusted_r2 <- summary(model_final)$adj.r.squared
+adjusted_r2
+#16: How can this adjusted R2 value be interpreted?
+interpretation_adjusted_r2 <- "Approximately 98.3% of the variation in the credit card balance can be explained by the independent variables in the model, after adjusting for the number of variables and sample size."
+interpretation_adjusted_r2
+#17: What is the standardized slope coefficient for the Income variable?
+standardized_slope_income <- coef(model_final)["Income"] / summary(model_final)$coefficients["Income", "Std. Error"]
+standardized_slope_income
+
+#18: Looking at the standardized slope coefficients, which variable makes the 
+standardized_slopes <- coef(model_final)[-1] / summary(model_final)$coefficients[-1, "Std. Error"]
+standardized_slopes
+strongest_contribution <- names(standardized_slopes)[which.max(abs(standardized_slopes))]
+strongest_contribution
+
+##### Question 10
+# Perform multiple regression on validation data with significant predictors
+model_final_valid <- lm(Balance ~ Income + Rating + Age + Education + Student, data = valid_data)
+
+# Summary of the final regression model on validation data
+summary(model_final_valid)
+
+### Question 11
+# Read the CSV file for prediction
+prediction_data <- read.csv("C:/Users/fredy/Downloads/credit_card_prediction.csv")
+
+# Create a new model with necessary variables
+model_prediction <- lm(Balance ~ Income + Rating + Age + Student, data = train_data)
+
+
+# Predict the balances for new cardholders
+predictions <- predict(model_prediction, newdata = prediction_data, interval = "prediction", level = 0.95)
+
+# Extract the predicted balances and prediction intervals
+predicted_balances <- predictions[, 1]
+prediction_intervals <- predictions[, c(2, 3)]
+# Quiz question #19: What is the predicted balance for new cardholder #1?
+predicted_balance_cardholder1 <- predicted_balances[1]
+predicted_balance_cardholder1
+#Quiz question #20: What is the 95% prediction interval for the predicted balance for new cardholder #2?
+prediction_interval_cardholder2 <- prediction_intervals[2, ]
+prediction_interval_cardholder2
+```
