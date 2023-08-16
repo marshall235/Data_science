@@ -1,0 +1,79 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+---
+```{r}
+# Load the dataset
+credit_data <- read.csv("C:/Users/fredy/Downloads/Credit.csv")
+# 1) Generate summary statistics
+summary(credit_data)
+# Quiz question #1: How many cardholders in the full dataset are students?
+students_count <- sum(credit_data$Student == 1)
+students_count
+# 2) Partition the dataset into training and validation sets
+set.seed(42)  # Set the seed for reproducibility
+n <- nrow(credit_data)
+train_indices <- sample(1:n, n/2)
+train_data <- credit_data[train_indices, ]
+validation_data <- credit_data[-train_indices, ]
+# 3) Create a correlation matrix with quantitative variables in the training dataframe
+quant_vars <- c("Income", "Limit", "Rating", "Age", "Education", "Balance")
+cor_matrix <- cor(train_data[quant_vars])
+cor_matrix
+# 4) Multiple regression analysis
+model <- lm(Balance ~ ., data = train_data)
+summary(model)
+# Quiz question #3: What is the slope coefficient for the Rating variable?
+slope_rating <- coef(model)["Rating"]
+slope_rating
+# 5) Calculate the Variance Inflation Factor (VIF
+library(car)
+vif_values <- vif(model)
+vif_values
+# Quiz question #4: What is the VIF for the Limit variable?
+vif_limit <- vif_values["Limit"]
+vif_limit
+
+# Quiz question #5: What problem does the VIF for Limit suggest that we have with the analysis? (MC)
+# A high VIF for a predictor variable suggests multicollinearity, indicating that the predictor variable is highly correlated with other predictor variables in the model.
+# 6) New multiple regression analysis with selected predictor variables
+new_model <- lm(Balance ~ Income + Rating + Age + Education + Student + Gender + Married, data = train_data)
+summary(new_model)
+# Quiz question #6: What is the new slope coefficient for the Rating variable?
+new_slope_rating <- coef(new_model)["Rating"]
+new_slope_rating
+# 7) Residual plot and normal probability plot
+par(mfrow = c(1, 2))  # Set up a 1x2 plot layout
+
+# Residual plot
+plot(new_model, which = 1, main = "Residual Plot")
+# Normal probability plot
+plot(new_model, which = 2, main = "Normal Probability Plot")
+#9) New multiple regression analysis with significant predictor variables
+significant_vars <- c("Rating", "Student")
+new_model_sig <- lm(Balance ~ Income + Limit + Rating + Age + Education + Student + Married, data = train_data)
+summary(new_model_sig)
+
+# Quiz question #12: What is the slope coefficient for the Age variable?
+# Quiz question #13: How would you interpret the slope coefficient for the Rating variable? (MC)
+# Quiz question #14: How would you interpret the slope coefficient for the Student variable? (MC)
+# Quiz question #15: What is the adjusted R2 for this regression analysis?
+# Quiz question #16: How can this adjusted R2 value be interpreted? (MC)
+# Quiz question #17: What is the standardized slope coefficient for the Income variable?
+# Quiz question #18: Looking at the standardized slope coefficients, which variable makes the strongest unique contribution to predicting credit card balance? (MC)
+# 10) Final multiple regression analysis on validation dataframe with significant predictor variables
+validation_model <- lm(Balance ~ Income + Limit + Rating + Age + Education + Student + Married, data = validation_data)
+summary(validation_model)
+###11
+prediction_model<- lm(Balance ~ Income + Rating + Age + Student, data = validation_data)
+prediction_data <- read.csv("C:/Users/fredy/Downloads/credit_card_prediction.csv")
+predicted_balances <- predict(prediction_model, newdata = prediction_data, interval = "prediction", level = 0.95)
+# Quiz question #19: What is the predicted balance for new cardholder #1?
+predicted_balance_card1 <- predicted_balances[1, "fit"]
+predicted_balance_card1
+# Quiz question #20: What is the 95% prediction interval for the predicted balance for new cardholder #2?
+prediction_interval_card2 <- predicted_balances[2, c("lwr", "upr")]
+prediction_interval_card2
+```
