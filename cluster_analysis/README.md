@@ -1,6 +1,4 @@
-K-Means Clustering README
 K-Means Clustering
-
 Table of Contents
 Introduction
 What is K-Means Clustering?
@@ -21,34 +19,30 @@ How K-Means Works
 The K-Means algorithm operates in the following steps:
 
 Initialization: Choose the number of clusters (k) and randomly initialize k cluster centroids.
-
 Assignment: Assign each data point to the nearest cluster centroid based on a chosen distance metric, commonly Euclidean distance.
-
 Update Centroids: Calculate the new centroids of each cluster by taking the mean of all data points assigned to that cluster.
-
 Repeat: Steps 2 and 3 are repeated iteratively until convergence, i.e., when the centroids no longer change significantly or a predefined number of iterations is reached.
-
 Final Clusters: Once convergence is achieved, the algorithm provides the final clusters of data points.
-
 Getting Started
 Installation
-To use the K-Means Clustering algorithm, you can follow these steps:
+To use the K-Means Clustering algorithm, follow these steps:
 
 Clone this repository:
-
 bash
+Copy code
 git clone https://github.com/yourusername/k-means-clustering.git
 Change directory:
-
 bash
+Copy code
 cd k-means-clustering
 Install dependencies (if any):
-
+Copy code
 pip install -r requirements.txt
 Usage
-If you are using R, you can follow the steps outlined below to perform K-Means Clustering:
+If you are using R, you can follow these steps to perform K-Means Clustering:
 
 r
+Copy code
 # Step 1: Import the data from CSV
 data <- read.csv("C:/Users/fredy/Downloads/Employees.csv")
 
@@ -73,5 +67,4 @@ Check out the examples directory for more detailed usage scenarios and R scripts
 
 Contributing
 Contributions are welcome! If you find any issues or have improvements to suggest, please open an issue or a pull request in this repository.
-
 
